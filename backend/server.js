@@ -3,9 +3,22 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "*"
+}));
 app.use(express.json());
-const db = mysql.createConnection({ host: "localhost", user: "root", password: "", database: "game_edu" });
+
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  ssl: process.env.DB_SSL === "true"
+    ? { rejectUnauthorized: true }
+    : undefined
+});
+
 app.get("/api/questions", (req, res) => {
  db.query("SELECT * FROM questions ORDER BY id DESC", (err, results) => {
     if (err) return res.status(500).json(err);
@@ -33,7 +46,7 @@ app.delete("/api/questions/:id", (req, res) => {
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = "rahasia_game_edu_2026";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.post("/api/register", async (req, res) => {
   const { nama, email, mapel, password } = req.body;
@@ -131,5 +144,9 @@ app.put("/api/questions/:id", (req, res) => {
   );
 });
 
-app.listen(5000, () => console.log("Server Backend GameEdu berjalan di http://localhost:5000"));
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server berjalan pada port ${PORT}`);
+});
 
